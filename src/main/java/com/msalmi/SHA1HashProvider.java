@@ -10,6 +10,7 @@ import org.keycloak.models.credential.PasswordCredentialModel;
 public class SHA1HashProvider implements PasswordHashProvider {
 
 	private final String providerId;
+	public static final String ALGORITHM = "SHA-1";
 
 	public SHA1HashProvider(String providerId) {
 		this.providerId = providerId;
@@ -32,7 +33,8 @@ public class SHA1HashProvider implements PasswordHashProvider {
 
 	@Override
 	public boolean verify(String rawPassword, PasswordCredentialModel credential) {
-		String encodedPassword = this.encode(rawPassword, credential.getPasswordCredentialData().getHashIterations());
+		String salt = new String(credential.getPasswordSecretData().getSalt(), java.nio.charset.StandardCharsets.UTF_8);
+		String encodedPassword = this.encode(salt + rawPassword, credential.getPasswordCredentialData().getHashIterations());
 		String hash = credential.getPasswordSecretData().getValue();
 		return encodedPassword.equals(hash);
 	}
@@ -40,7 +42,7 @@ public class SHA1HashProvider implements PasswordHashProvider {
 	@Override
 	public String encode(String rawPassword, int iterations) {
 		try {
-			MessageDigest md = MessageDigest.getInstance(this.providerId);
+			MessageDigest md = MessageDigest.getInstance(ALGORITHM);
 			md.update(rawPassword.getBytes());
 
 			// convert the digest byte[] to BigInteger

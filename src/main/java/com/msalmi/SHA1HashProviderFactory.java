@@ -7,7 +7,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 public class SHA1HashProviderFactory implements PasswordHashProviderFactory {
-	public static final String ID = "SHA-1";
+	public static final String ID = "sha1-salted";
 
 	@Override
 	public PasswordHashProvider create(KeycloakSession session) {
