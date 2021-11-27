@@ -1,7 +1,10 @@
 package com.msalmi;
 
-import java.math.BigInteger;
+
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.Base64;
 
 import org.keycloak.credential.hash.PasswordHashProvider;
 import org.keycloak.models.PasswordPolicy;
@@ -33,10 +36,24 @@ public class SHA1HashProvider implements PasswordHashProvider {
 
 	@Override
 	public boolean verify(String rawPassword, PasswordCredentialModel credential) {
-		String salt = new String(credential.getPasswordSecretData().getSalt(), java.nio.charset.StandardCharsets.UTF_8);
-		String encodedPassword = this.encode(salt + rawPassword, credential.getPasswordCredentialData().getHashIterations());
-		String hash = credential.getPasswordSecretData().getValue();
-		return encodedPassword.equals(hash);
+		String salt = new String(credential.getPasswordSecretData().getSalt(), StandardCharsets.UTF_8);
+        String hash = credential.getPasswordSecretData().getValue();
+        String encodedPassword = this.encode(salt + rawPassword, credential.getPasswordCredentialData().getHashIterations());
+
+        //Option2:
+        byte[] one = credential.getPasswordSecretData().getSalt();
+        byte[] two = rawPassword.getBytes();
+        byte[] combined = new byte[one.length + two.length];
+        System.arraycopy(one,0,combined,0         ,one.length);
+        System.arraycopy(two,0,combined,one.length,two.length);
+        String combinedPass = new String(combined, StandardCharsets.UTF_8);
+
+        String encodedPasswordFromByte = this.encode(combinedPass, credential.getPasswordCredentialData().getHashIterations());
+
+        return Arrays.asList(encodedPassword, encodedPasswordFromByte)
+            .stream().anyMatch(s -> {
+               return s.equals(hash);
+            });
 	}
 
 	@Override
@@ -44,12 +61,9 @@ public class SHA1HashProvider implements PasswordHashProvider {
 		try {
 			MessageDigest md = MessageDigest.getInstance(ALGORITHM);
 			md.update(rawPassword.getBytes());
+            byte[] hashed = md.digest();
 
-			// convert the digest byte[] to BigInteger
-			var aux = new BigInteger(1, md.digest());
-
-			// convert BigInteger to 40-char lowercase string using leading 0s
-			return String.format("%040x", aux);
+            return Base64.getEncoder().encodeToString(hashed);
 		} catch (Exception e) {
 			// fail silently
 		}
