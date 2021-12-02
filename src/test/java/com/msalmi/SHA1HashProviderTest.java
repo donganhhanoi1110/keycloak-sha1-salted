@@ -3,7 +3,11 @@ package com.msalmi;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.keycloak.models.credential.PasswordCredentialModel;
+import org.keycloak.models.credential.dto.PasswordCredentialData;
+import org.keycloak.models.credential.dto.PasswordSecretData;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -58,4 +62,15 @@ public class SHA1HashProviderTest {
         assertTrue(encodedBase64.equals(expected));
 
     }
+    @Test
+    public void verify() throws IOException {
+        final var provider = new SHA1HashProvider(SHA1HashProviderFactory.ID);
+        String salt = "xk2kekAFrJEqrGm5jqld2Q==";
+        String encodedPass = "14R4YMIzQz4ZfdOEUOALMxnM1aw=";
+//        PasswordCredentialData cred = new PasswordCredentialData(1, "sha-salted");
+//        PasswordSecretData se = new PasswordSecretData("14R4YMIzQz4ZfdOEUOALMxnM1aw=", "xk2kekAFrJEqrGm5jqld2Q==");
+        PasswordCredentialModel var2 =  PasswordCredentialModel.createFromValues("sha-salted", salt.getBytes(StandardCharsets.UTF_8), 1, encodedPass);
+        provider.verify("thuan@123",var2 );
+    }
+
 }

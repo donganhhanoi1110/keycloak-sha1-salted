@@ -36,22 +36,29 @@ public class SHA1HashProvider implements PasswordHashProvider {
 
 	@Override
 	public boolean verify(String rawPassword, PasswordCredentialModel credential) {
+        System.out.println("Raw salt:" + credential.getPasswordSecretData().getSalt());
 		String salt = new String(credential.getPasswordSecretData().getSalt(), StandardCharsets.UTF_8);
-        String hash = credential.getPasswordSecretData().getValue();
-        String encodedPassword = this.encode(salt + rawPassword, credential.getPasswordCredentialData().getHashIterations());
+        String saltbase64 = Base64.getEncoder().encodeToString(credential.getPasswordSecretData().getSalt());
+        System.out.println("Raw pass:" +  rawPassword +",  Raw Salt:" + salt + " Salt64: " + saltbase64);
 
-        //Option2:
-        byte[] one = credential.getPasswordSecretData().getSalt();
+        String hash = credential.getPasswordSecretData().getValue();
+        String decodedSalt = new String(Base64.getDecoder().decode(credential.getPasswordSecretData().getSalt()));
+        System.out.println("Decoded:" + decodedSalt);
+        String encodedPassword = this.encode(  decodedSalt + rawPassword, credential.getPasswordCredentialData().getHashIterations());
+
+        //Option3:
+        byte[] one = Base64.getDecoder().decode(saltbase64);
         byte[] two = rawPassword.getBytes();
         byte[] combined = new byte[one.length + two.length];
         System.arraycopy(one,0,combined,0         ,one.length);
         System.arraycopy(two,0,combined,one.length,two.length);
         String combinedPass = new String(combined, StandardCharsets.UTF_8);
-
+        System.out.println("combinedPass: "+ combinedPass);
         String encodedPasswordFromByte = this.encode(combinedPass, credential.getPasswordCredentialData().getHashIterations());
 
         return Arrays.asList(encodedPassword, encodedPasswordFromByte)
             .stream().anyMatch(s -> {
+                System.out.println("encoded: "+ s +", vs currentHash: " + hash);
                return s.equals(hash);
             });
 	}
@@ -60,7 +67,7 @@ public class SHA1HashProvider implements PasswordHashProvider {
 	public String encode(String rawPassword, int iterations) {
 		try {
 			MessageDigest md = MessageDigest.getInstance(ALGORITHM);
-			md.update(rawPassword.getBytes());
+			md.update(rawPassword.getBytes(StandardCharsets.UTF_8));
             byte[] hashed = md.digest();
 
             return Base64.getEncoder().encodeToString(hashed);
