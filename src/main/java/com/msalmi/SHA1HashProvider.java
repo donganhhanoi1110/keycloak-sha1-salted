@@ -3,6 +3,7 @@ package com.msalmi;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -36,31 +37,17 @@ public class SHA1HashProvider implements PasswordHashProvider {
 
 	@Override
 	public boolean verify(String rawPassword, PasswordCredentialModel credential) {
-		String salt = new String(credential.getPasswordSecretData().getSalt(), StandardCharsets.UTF_8);
+		String salt = new String(credential.getPasswordSecretData().getSalt(), StandardCharsets.UTF_16LE);
         String hash = credential.getPasswordSecretData().getValue();
         String encodedPassword = this.encode(salt + rawPassword, credential.getPasswordCredentialData().getHashIterations());
-
-        //Option2:
-        byte[] one = credential.getPasswordSecretData().getSalt();
-        byte[] two = rawPassword.getBytes();
-        byte[] combined = new byte[one.length + two.length];
-        System.arraycopy(one,0,combined,0         ,one.length);
-        System.arraycopy(two,0,combined,one.length,two.length);
-        String combinedPass = new String(combined, StandardCharsets.UTF_8);
-
-        String encodedPasswordFromByte = this.encode(combinedPass, credential.getPasswordCredentialData().getHashIterations());
-
-        return Arrays.asList(encodedPassword, encodedPasswordFromByte)
-            .stream().anyMatch(s -> {
-               return s.equals(hash);
-            });
+        return hash.equals(encodedPassword);
 	}
 
 	@Override
 	public String encode(String rawPassword, int iterations) {
 		try {
 			MessageDigest md = MessageDigest.getInstance(ALGORITHM);
-			md.update(rawPassword.getBytes());
+			md.update(rawPassword.getBytes(StandardCharsets.UTF_16LE));
             byte[] hashed = md.digest();
 
             return Base64.getEncoder().encodeToString(hashed);

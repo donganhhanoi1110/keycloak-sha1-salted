@@ -3,7 +3,12 @@ package com.msalmi;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.keycloak.models.credential.PasswordCredentialModel;
+import org.keycloak.models.credential.dto.PasswordCredentialData;
+import org.keycloak.models.credential.dto.PasswordSecretData;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -45,17 +50,31 @@ public class SHA1HashProviderTest {
 		assertTrue(encoded.equals(expected));
 	}
 
+    /**
+     *
+     */
     @Test
-    public void encodeSalt() {
+    public void encodeSalt() throws UnsupportedEncodingException {
         final var provider = new SHA1HashProvider(SHA1HashProviderFactory.ID);
-        var expected = "9mcmOmNw5lbi+FStSQr3hy5/S/s=";
-        String salt = "salt";
-        String saltBase64 = Base64.getEncoder().encodeToString(salt.getBytes(StandardCharsets.UTF_8));
-        System.out.println("salt = " + saltBase64);
-        String pass = "user";
-        var encodedBase64 = provider.encode(salt+pass, 0);
+        var expected = "lkFXfsJ7XC0JSo+ijMIagIHvuL8=";
+
+        String salt = "OirIPM4rKE79IWL2lTclog==";
+        String saltBase64Dr = new String(Base64.getDecoder().decode(salt), "UTF-16LE");
+        System.out.println("salt = " + saltBase64Dr);
+        String pass = "123456";
+        var encodedBase64 = provider.encode(saltBase64Dr+pass, 0);
         System.out.println("hashed = " + encodedBase64);
+
         assertTrue(encodedBase64.equals(expected));
+
+    }
+
+    @Test
+    public void encodeSalt2() throws IOException {
+        PasswordSecretData passwordSecretData = new PasswordSecretData( "lkFXfsJ7XC0JSo+ijMIagIHvuL8=","OirIPM4rKE79IWL2lTclog==");
+        PasswordCredentialModel credentialModel = PasswordCredentialModel.createFromValues("sha1-salted", passwordSecretData.getSalt(), 0, passwordSecretData.getValue());
+        final var provider = new SHA1HashProvider(SHA1HashProviderFactory.ID);
+        assertTrue(provider.verify("123456", credentialModel));
 
     }
 }
